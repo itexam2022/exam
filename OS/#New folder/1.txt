@@ -1,0 +1,20 @@
+echo 
+ls - content in directory
+read
+cat - reads data from the file and gives their content as output
+touch - create file or directory
+test - checks whether the command/expression is true or false
+
+pwd - Show the present working directory.
+mkdir - to create directory/folder
+rmdir - It is used to delete a directory if it is empty
+cd - directory navigation
+rm - remove file and directory(for directory use -rf)
+sort - This command is used to sort the contents of files.
+cal - displays a calendar of the specified year or month
+grep - This command is used to search for the specified text in a file
+sed - 
+
+loops
+arithmetic comparision
+conditional loops
