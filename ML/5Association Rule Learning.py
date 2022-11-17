@@ -12,6 +12,7 @@ with open('Market_Basket_Optimisation.csv') as file:
 
 dataset[0:10]
 
+#structuring unsture dataset
 te = TrasactionEncoder()
 x = te.fit_transform(dataset)
 x
