@@ -4,7 +4,7 @@ import seaborn as sns
 
 df = pd.read_csv("Admission.csv")
 
-from sklearn.prerocessing import Binarizer 
+from sklearn.preprocessing import Binarizer 
 bi = Binarizer(threshold = 0.75)
 df['Chance of Admit '] = bi.fit_transform(df[['Chance of Admit ']])
 
