@@ -22,7 +22,7 @@ model.add(Dense(8, activation='relu'))
 model.add(Dense(1, activation="sigmoid"))
 
 #2Compile the model
-model.compile(loss='binary_crossentropy', optimizer="adam", metrics=['accuracyz'])
+model.compile(loss='binary_crossentropy', optimizer="adam", metrics=['accuracy'])
 
 #train model
 model.fit(x, y, epochs=100, batch_size=10)
