@@ -1,98 +1,48 @@
-import numpy as np
-import pandas as pd
 import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, Dropout, Flatten, MaxPooling2D
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score
-from tensorflow.keras.optimizers import Adam
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras import Model, Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.losses import MeanSquaredLogarithmicError
-PATH_TO_DATA = 'http://storage.googleapis.com/download.tensorflow.org/data/ecg.csv'
-data = pd.read_csv(PATH_TO_DATA, header=None)
-data.head()
+import numpy as np
 
-#splitting training and testing dataset
-features = data.drop(140, axis=1)
-target = data[140]
-x_train, x_test, y_train, y_test = train_test_split(
- features, target, test_size=0.2, stratify=target
-)
-train_index = y_train[y_train == 1].index
-train_data = x_train.loc[train_index]
+mnist = tf.keras.datasets.mnist
+(x_train,y_train),(x_test,y_test)=mnist.load_data()
+input_shape = (28, 28, 1)
 
-#scaling the data using MinMaxScaler
-min_max_scaler = MinMaxScaler(feature_range=(0, 1))
-x_train_scaled = min_max_scaler.fit_transform(train_data.copy())
-x_test_scaled = min_max_scaler.transform(x_test.copy())
+x_train = x_train.reshape(x_train.shape[0],28,28,1)
+x_test = x_test.reshape(x_test.shape[0],28,28,1)
 
-#creating autoencoder subclass by extending Model class from keras
-class AutoEncoder(Model):
-  def __init__(self, output_units, ldim=8):
-    super().__init__()
-    self.encoder = Sequential([
-    Dense(64, activation='relu'),
-    Dropout(0.1),
-    Dense(32, activation='relu'),
-    Dropout(0.1),
-    Dense(16, activation='relu'),
-    Dropout(0.1),
-    Dense(ldim, activation='relu')
-    ])
-    self.decoder = Sequential([
-    Dense(16, activation='relu'),
-    Dropout(0.1),
-    Dense(32, activation='relu'),
-    Dropout(0.1),
-    Dense(64, activation='relu'),
-    Dropout(0.1),
-    Dense(output_units, activation='sigmoid')
-    ])
+print("Data Type x_train:" , x_train.dtype)
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+print("Data Type x_train after conversion:" , x_train.dtype)
 
-  def call(self, inputs):
-    encoded = self.encoder(inputs)
-    decoded = self.decoder(encoded)
-    return decoded
+x_train = x_train / 255
+x_test = x_test / 255
+print("Shape of Training: ", x_train.shape)
+print("shape of Testing: ", x_test.shape)
+
+model = Sequential()
+model.add(Conv2D(28, kernel_size=(3,3), input_shape=input_shape))
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Flatten())
+model.add(Dense(200, activation="relu"))
+model.add(Dropout(0.3))
+model.add(Dense(10,activation="softmax"))
+
+model.summary()
 
 
-#model configuration
-model = AutoEncoder(output_units=x_train_scaled.shape[1])
-model.compile(loss='msle', metrics=['mse'], optimizer='adam')
-epochs = 20
-history = model.fit(
- x_train_scaled,
- x_train_scaled,
- epochs=epochs,
- batch_size=512,
- validation_data=(x_test_scaled, x_test_scaled)
-)
+model.compile(optimizer="adam",loss="sparse_categorical_crossentropy",metrics=['accuracy'])
+model.fit(x_train, y_train, epochs=6)
 
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.xlabel('Epochs')
-plt.ylabel('MSLE Loss')
-plt.legend(['loss', 'val_loss'])
+test_loss, test_acc = model.evaluate(x_test, y_test)
+print("Loss=%.3f"%test_loss)
+print("Accurracy=%.3f"%test_acc)
+
+image = x_train[3]
+plt.imshow(np.squeeze(image), cmap="gray")
 plt.show()
 
-
-#finding threshold for anomaly and doing predictions
-def find_threshold(model, x_train_scaled):
- reconstructions = model.predict(x_train_scaled)
- reconstruction_errors = tf.keras.losses.msle(reconstructions, x_train_scaled)
- threshold = np.mean(reconstruction_errors.numpy()) \
- + np.std(reconstruction_errors.numpy())
- return threshold
-def get_predictions(model, x_test_scaled, threshold):
- predictions = model.predict(x_test_scaled)
- errors = tf.keras.losses.msle(predictions, x_test_scaled)
- anomaly_mask = pd.Series(errors) > threshold
- preds = anomaly_mask.map(lambda x: 0.0 if x == True else 1.0)
- return preds
-threshold = find_threshold(model, x_train_scaled)
-print(f"Threshold: {threshold}")
-
-
-#getting accuracy score
-predictions = get_predictions(model, x_test_scaled, threshold)
-accuracy_score(predictions, y_test)
+image=image.reshape(1, image.shape[0], image.shape[1], image.shape[2])
+predict_model = model.predict([image])
+print("Predicted class: {}".format(np.argmax(predict_model)))
